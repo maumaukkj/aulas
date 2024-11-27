@@ -1,0 +1,184 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+#define TAM 8 // Tamanho do tabuleiro
+
+// Função para inicializar o tabuleiro com a configuração inicial
+void inicializarTabuleiro(char tabuleiro[TAM][TAM]) {
+    const char* pecasLinha1 = "TCBDRBCT";
+    const char* pecasLinha2 = "PPPPPPPP";
+
+    for (int i = 0; i < TAM; i++) {
+        tabuleiro[0][i] = pecasLinha1[i]; // Linha 1: peças pretas principais
+        tabuleiro[1][i] = pecasLinha2[i]; // Linha 2: peões pretos
+        tabuleiro[6][i] = 'p';            // Linha 7: peões brancos
+        tabuleiro[7][i] = tolower(pecasLinha1[i]); // Linha 8: peças brancas principais
+    }
+
+    for (int i = 2; i < 6; i++) {
+        for (int j = 0; j < TAM; j++) {
+            tabuleiro[i][j] = '.'; // Linhas intermediárias vazias
+        }
+    }
+}
+
+// Função para exibir o tabuleiro
+void exibirTabuleiro(char tabuleiro[TAM][TAM]) {
+    printf("\n   a b c d e f g h\n");
+    for (int i = 0; i < TAM; i++) {
+        printf("%d  ", 8 - i);
+        for (int j = 0; j < TAM; j++) {
+            printf("%c ", tabuleiro[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+// Função para verificar condições de vitória
+int verificarVitoria(char tabuleiro[TAM][TAM]) {
+    int reiBranco = 0, reiPreto = 0;
+
+    for (int i = 0; i < TAM; i++) {
+        for (int j = 0; j < TAM; j++) {
+            if (tabuleiro[i][j] == 'R') reiPreto = 1; // Rei preto encontrado
+            if (tabuleiro[i][j] == 'r') reiBranco = 1; // Rei branco encontrado
+        }
+    }
+
+    if (!reiPreto) {
+        printf("Vitória do jogador branco!\n");
+        return 1; // Jogo termina
+    }
+    if (!reiBranco) {
+        printf("Vitória do jogador preto!\n");
+        return 1; // Jogo termina
+    }
+    return 0; // Jogo continua
+}
+
+// Função para validar o movimento de peças
+int validarMovimento(char tabuleiro[TAM][TAM], int origemX, int origemY, int destinoX, int destinoY) {
+    char peca = tabuleiro[origemX][origemY];
+    int dx = destinoX - origemX;
+    int dy = destinoY - origemY;
+
+    // Verifica se está movendo para o mesmo lugar
+    if (dx == 0 && dy == 0) {
+        printf("Movimento inválido: mesma posição.\n");
+        return 0;
+    }
+
+    // Verifica se está tentando capturar uma peça do mesmo time
+    if (isupper(peca) && isupper(tabuleiro[destinoX][destinoY])) {
+        printf("Movimento inválido: não pode capturar sua própria peça.\n");
+        return 0;
+    }
+    if (islower(peca) && islower(tabuleiro[destinoX][destinoY])) {
+        printf("Movimento inválido: não pode capturar sua própria peça.\n");
+        return 0;
+    }
+
+    // Validação de movimentos específicos por peça
+    switch (peca) {
+        case 'P': // Peão preto
+            if (origemX == 1) { // Primeira linha para peão preto
+                if ((dx == 2 && dy == 0 && tabuleiro[origemX + 1][origemY] == '.' && tabuleiro[destinoX][destinoY] == '.') ||
+                    (dx == 1 && dy == 0 && tabuleiro[destinoX][destinoY] == '.') || // Avança uma casa
+                    (dx == 1 && abs(dy) == 1 && tabuleiro[destinoX][destinoY] != '.')) // Captura
+                    return 1;
+            } else {
+                if ((dx == 1 && dy == 0 && tabuleiro[destinoX][destinoY] == '.') || // Avança uma casa
+                    (dx == 1 && abs(dy) == 1 && tabuleiro[destinoX][destinoY] != '.')) // Captura
+                    return 1;
+            }
+            break;
+        case 'p': // Peão branco
+            if (origemX == 6) { // Primeira linha para peão branco
+                if ((dx == -2 && dy == 0 && tabuleiro[origemX - 1][origemY] == '.' && tabuleiro[destinoX][destinoY] == '.') ||
+                    (dx == -1 && dy == 0 && tabuleiro[destinoX][destinoY] == '.') || // Avança uma casa
+                    (dx == -1 && abs(dy) == 1 && tabuleiro[destinoX][destinoY] != '.')) // Captura
+                    return 1;
+            } else {
+                if ((dx == -1 && dy == 0 && tabuleiro[destinoX][destinoY] == '.') || // Avança uma casa
+                    (dx == -1 && abs(dy) == 1 && tabuleiro[destinoX][destinoY] != '.')) // Captura
+                    return 1;
+            }
+            break;
+        case 'T': case 't': // Torre
+            if (dx == 0 || dy == 0) return 1; // Movimento reto
+            break;
+        case 'B': case 'b': // Bispo
+            if (abs(dx) == abs(dy)) return 1; // Movimento diagonal
+            break;
+        case 'D': case 'd': // Dama (Rainha)
+                    if (dx == 0 || dy == 0 || abs(dx) == abs(dy)) return 1; // Reto ou diagonal
+            break;
+        case 'C': case 'c': // Cavalo
+                    if ((abs(dx) == 2 && abs(dy) == 1) || (abs(dx) == 1 && abs(dy) == 2)) return 1; // Movimento em L
+            break;
+        case 'R': case 'r': // Rei
+                    if (abs(dx) <= 1 && abs(dy) <= 1) return 1; // Uma casa em qualquer direção
+            break;
+          
+    }
+
+    printf("Movimento inválido para a peça %c.\n", peca);
+    return 0;
+}
+
+// Função para mover peças
+void moverPeca(char tabuleiro[TAM][TAM], int origemX, int origemY, int destinoX, int destinoY) {
+    tabuleiro[destinoX][destinoY] = tabuleiro[origemX][origemY];
+    tabuleiro[origemX][origemY] = '.';
+}
+
+int main() {
+    char tabuleiro[TAM][TAM];
+    int opcao;
+    inicializarTabuleiro(tabuleiro);
+
+    do {
+        printf("\n=== Jogo de Xadrez ===\n");
+        printf("1. Exibir Tabuleiro\n");
+        printf("2. Mover Peça\n");
+        printf("3. Reiniciar Jogo\n");
+        printf("4. Sair\n");
+        printf("Escolha uma opção: ");
+        scanf("%d", &opcao);
+
+        if (opcao == 1) {
+            exibirTabuleiro(tabuleiro);
+        } else if (opcao == 2) {
+            char origem[3], destino[3];
+            printf("Digite a posição de origem (ex: e2): ");
+            scanf("%s", origem);
+            printf("Digite a posição de destino (ex: e4): ");
+            scanf("%s", destino);
+
+            // Converter coordenadas
+            int origemX = 8 - (origem[1] - '0');
+            int origemY = origem[0] - 'a';
+            int destinoX = 8 - (destino[1] - '0');
+            int destinoY = destino[0] - 'a';
+
+            // Validar e executar movimento
+            if (validarMovimento(tabuleiro, origemX, origemY, destinoX, destinoY)) {
+                moverPeca(tabuleiro, origemX, origemY, destinoX, destinoY);
+                if (verificarVitoria(tabuleiro)) break; // Encerrar se houver vitória
+            } else {
+                printf("Tente novamente.\n");
+            }
+        } else if (opcao == 3) {
+            inicializarTabuleiro(tabuleiro);
+            printf("Jogo reiniciado!\n");
+        } else if (opcao != 4) {
+            printf("Opção inválida!\n");
+        }
+    } while (opcao != 4);
+
+    printf("Obrigado por jogar!\n");
+    return 0;
+}
+
